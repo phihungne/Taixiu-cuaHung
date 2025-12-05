@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Tài Xỉu – Hùng Casino</title>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+        background: #111;
+        font-family: Arial;
+        color: white;
+        overflow: hidden;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    h1 {
+        margin-top: 20px;
+        font-size: 50px;
+        text-shadow: 0 0 15px #ff0066;
+    }
+
+    #gameBox {
+        margin-top: 20px;
+        width: 100vw;
+        height: calc(100vh - 120px);
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+
+        background: #222;
+        box-shadow: inset 0 0 50px rgba(255,0,130,0.4);
+        padding-top: 20px;
+    }
+
+    #moneyBox {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+
+    input {
+        padding: 18px;
+        font-size: 22px;
+        width: 300px;
+        border-radius: 15px;
+        border: none;
+        text-align: center;
+        margin-top: 15px;
+    }
+
+    button {
+        padding: 18px 30px;
+        margin: 12px;
+        font-size: 26px;
+        border-radius: 15px;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    #taiBtn { background: #ff0066; color: white; }
+    #xiuBtn { background: #0099ff; color: white; }
+    button:hover { transform: scale(1.1); }
+
+    .diceBox {
+        font-size: 80px;
+        letter-spacing: 25px;
+        margin-top: 30px;
+        margin-bottom: 30px;
+    }
+
+    #result {
+        font-size: 30px;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+
+    /* === BIỂU ĐỒ TÀI XỈU === */
+    #chart {
+        width: 90%;
+        height: 200px;
+        background: #000;
+        margin-top: 15px;
+        border-radius: 12px;
+        padding: 10px;
+        display: grid;
+        grid-template-columns: repeat(20, 1fr);
+        grid-auto-rows: 20px;
+        gap: 4px;
+    }
+    .box {
+        width: 100%;
+        height: 100%;
+        border-radius: 4px;
+    }
+    .box.tai { background: #ff1744; } /* đỏ */
+    .box.xiu { background: #2979ff; } /* xanh */
+
+    #history {
+        width: 90%;
+        height: 30vh;
+        margin-top: 20px;
+        background: #333;
+        padding: 20px;
+        font-size: 22px;
+        border-radius: 15px;
+        overflow-y: auto;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>🎲 TÀI XỈU – Hùng Casino 🎲</h1>
+
+<div id="gameBox">
+
+    <div id="moneyBox">
+        💰 Tiền hiện có: <span id="money">10000</span>
+    </div>
+
+    <input id="bet" type="number" placeholder="Nhập số tiền cược">
+
+    <div>
+        <button id="taiBtn" onclick="choose('tai')">TÀI</button>
+        <button id="xiuBtn" onclick="choose('xiu')">XỈU</button>
+    </div>
+
+    <div class="diceBox" id="dice">⚀ ⚀ ⚀</div>
+
+    <button onclick="play()" style="background:#00cc66; color:white;">🎯 QUAY</button>
+    <button onclick="resetMoney()" style="background:#ffaa00;">↻ Reset (3 lần)</button>
+
+    <div id="result"></div>
+
+    <!-- CHART TÀI/XỈU -->
+    <div id="chart"></div>
+
+    <!-- HISTORY -->
+    <div id="history"></div>
+
+</div>
+
+<script>
+let betType = "";
+let money = 10000;
+let resetCount = 0;
+const maxReset = 3;
+
+let chartHistory = []; // Lịch sử tài/xỉu
+
+function choose(type){
+    betType = type;
+    document.getElementById("result").innerHTML =
+        "Bạn chọn: <b>" + (type === "tai" ? "TÀI" : "XỈU") + "</b>";
+}
+
+function play() {
+    let bet = Number(document.getElementById("bet").value);
+
+    if (bet <= 0 || isNaN(bet)) {
+        alert("Nhập tiền cược hợp lệ!");
+        return;
+    }
+
+    if (bet > money) {
+        alert("Không đủ tiền!");
+        return;
+    }
+
+    if (betType === "") {
+        alert("Chọn TÀI hoặc XỈU trước!");
+        return;
+    }
+
+    let d1 = Math.floor(Math.random() * 6) + 1;
+    let d2 = Math.floor(Math.random() * 6) + 1;
+    let d3 = Math.floor(Math.random() * 6) + 1;
+
+    document.getElementById("dice").innerHTML =
+        convert(d1) + " " + convert(d2) + " " + convert(d3);
+
+    let sum = d1 + d2 + d3;
+    let result = sum >= 11 ? "tai" : "xiu";
+
+    // xử lý tiền
+    if (result === betType) {
+        money += bet;
+        document.getElementById("result").innerHTML =
+            `Kết quả: ${sum} → <b>THẮNG +${bet}</b>`;
+    } else {
+        money -= bet;
+        document.getElementById("result").innerHTML =
+            `Kết quả: ${sum} → <b>THUA -${bet}</b>`;
+    }
+
+    document.getElementById("money").innerText = money;
+
+    // cập nhật biểu đồ
+    updateChart(result);
+
+    // thêm vào lịch sử chữ
+    let his = document.getElementById("history");
+    his.innerHTML =
+        `<div>🎲 ${d1}-${d2}-${d3} = ${sum} (${result.toUpperCase()})</div>` + his.innerHTML;
+}
+
+function convert(n){
+    return ["⚀","⚁","⚂","⚃","⚄","⚅"][n-1];
+}
+
+/* ==== RESET 3 LẦN ==== */
+function resetMoney(){
+    if (resetCount >= maxReset){
+        alert("⚠️ Bạn chỉ được reset 3 lần!");
+        return;
+    }
+
+    resetCount++;
+
+    money = 10000;
+    document.getElementById("money").innerText = money;
+    document.getElementById("result").innerHTML =
+        `Đã reset tiền! (${resetCount}/${maxReset} lần)`;
+}
+
+/* ==== UPDATE CHART ==== */
+function updateChart(result){
+    chartHistory.push(result);
+
+    if (chartHistory.length > 60) chartHistory.shift();
+
+    const chart = document.getElementById("chart");
+    chart.innerHTML = "";
+
+    chartHistory.forEach(r => {
+        const box = document.createElement("div");
+        box.classList.add("box");
+        box.classList.add(r);
+        chart.appendChild(box);
+    });
+}
+</script>
+
+</body>
+</html>
